@@ -311,9 +311,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 // setup request headers if it is set
                 setupHeaders(httpConn, headers)
                 // try to continue downloading a file from its partial downloaded data.
-                if (isResume) {
-                    downloadedBytes = setupPartialDownloadedDataHeader(httpConn, actualFilename, savedDir)
-                }
+                // if (isResume) {
+                //     downloadedBytes = setupPartialDownloadedDataHeader(httpConn, actualFilename, savedDir)
+                // }
                 responseCode = httpConn.responseCode
                 when (responseCode) {
                     HttpURLConnection.HTTP_MOVED_PERM,
