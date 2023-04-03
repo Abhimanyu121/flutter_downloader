@@ -561,7 +561,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
 
     private fun cleanUp() {
         val task = taskDao!!.loadTask(id.toString())
-        if (task != null &&
+        if (task != null
            // task.status != DownloadStatus.COMPLETE && !task.resumable
             ) {
             var filename = task.filename
