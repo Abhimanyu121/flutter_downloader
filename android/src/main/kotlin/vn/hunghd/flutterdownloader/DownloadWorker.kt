@@ -145,6 +145,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
     }
 
     override fun doWork(): Result {
+        try{
+            cleanUpCompleted()
+        }catch(e: Exception){}
         dbHelper = TaskDbHelper.getInstance(applicationContext)
         taskDao = TaskDao(dbHelper!!)
         val url: String =
@@ -196,12 +199,12 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
         taskDao?.updateTask(id.toString(), DownloadStatus.RUNNING, task.progress)
 
         // automatic resume for partial files. (if the workmanager unexpectedly quited in background)
-        val saveFilePath = savedDir + File.separator + filename
-        val partialFile = File(saveFilePath)
-        if (partialFile.exists()) {
-            isResume = true
-            log("exists file for " + filename + "automatic resuming...")
-        }
+        // val saveFilePath = savedDir + File.separator + filename
+        // val partialFile = File(saveFilePath)
+        // if (partialFile.exists()) {
+        //     isResume = true
+        //     log("exists file for " + filename + "automatic resuming...")
+        // }
         return try {
             downloadFile(applicationContext, url, savedDir, filename, headers, isResume, timeout)
             cleanUp()
@@ -561,8 +564,8 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
 
     private fun cleanUp() {
         val task = taskDao!!.loadTask(id.toString())
-        if (task != null
-           // task.status != DownloadStatus.COMPLETE && !task.resumable
+        if (task != null &&
+           task.status != DownloadStatus.COMPLETE
             ) {
             var filename = task.filename
             if (filename == null) {
@@ -576,6 +579,23 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 tempFile.delete()
             }
         }
+    }
+    private fun cleanUpCompleted() {
+            val task = taskDao!!.loadTask(id.toString())
+            if (task != null 
+                ) {
+                var filename = task.filename
+                if (filename == null) {
+                    filename = task.url.substring(task.url.lastIndexOf("/") + 1, task.url.length)
+                }
+
+                // check and delete uncompleted file
+                val saveFilePath = task.savedDir + File.separator + filename
+                val tempFile = File(saveFilePath)
+                if (tempFile.exists()) {
+                    tempFile.delete()
+                }
+            }
     }
 
     private val notificationIconRes: Int
