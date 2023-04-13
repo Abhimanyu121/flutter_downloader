@@ -30,7 +30,6 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.FlutterCallbackInformation
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -50,6 +49,10 @@ import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
+import java.io.File
+
+
+
 
 class DownloadWorker(context: Context, params: WorkerParameters) :
     Worker(context, params),
@@ -147,7 +150,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
     override fun doWork(): Result {
         try{
             cleanUpCompleted()
-        }catch(e: Exception){}
+        }catch(e: Exception){
+
+        }
         dbHelper = TaskDbHelper.getInstance(applicationContext)
         taskDao = TaskDao(dbHelper!!)
         val url: String =
@@ -281,7 +286,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
             if (task != null) {
                 lastProgress = task.progress
             }
-
+            cleanUpCompleted();
             // handle redirection logic
             while (true) {
                 if (!visited.containsKey(url)) {
@@ -581,20 +586,37 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
         }
     }
     private fun cleanUpCompleted() {
+//        val context: Context = applicationContext
+//
+//        try {
+//            val dir: java.io.File = context.getCacheDir()
+//            deleteDir(dir)
+//        } catch (e: java.lang.Exception) {
+//            e.printStackTrace()
+//        }
+//        try {
+//            val dir: java.io.File = context.getFilesDir()
+//            deleteDir(dir)
+//        } catch (e: java.lang.Exception) {
+//            e.printStackTrace()
+//        }
             val task = taskDao!!.loadTask(id.toString())
             if (task != null 
                 ) {
                 var filename = task.filename
                 if (filename == null) {
                     filename = task.url.substring(task.url.lastIndexOf("/") + 1, task.url.length)
-                }
+                }            
+
 
                 // check and delete uncompleted file
                 val saveFilePath = task.savedDir + File.separator + filename
                 val tempFile = File(saveFilePath)
+
                 if (tempFile.exists()) {
                     tempFile.delete()
                 }
+
             }
     }
 
@@ -909,5 +931,19 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
 
     init {
         Handler(context.mainLooper).post { startBackgroundIsolate(context) }
+    }
+    fun deleteDir(dir: File): Boolean {
+        return if (dir.isDirectory) {
+            val children = dir.list() ?: return false
+            for (child in children) {
+                val success = deleteDir(File(dir, child))
+                if (!success) {
+                    return false
+                }
+            }
+            dir.delete()
+        } else {
+            dir.isFile && dir.delete()
+        }
     }
 }
